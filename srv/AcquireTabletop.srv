@@ -1,0 +1,16 @@
+# This shall hold one of the values defined below
+uint8 type
+# extract using name
+uint8 NAME=0
+# extract whatever matches the partial signature
+uint8 SIGNATURE=1
+# extract everything
+uint8 ALL=2
+# extract known
+uint8 KNOWN=3
+# How tolerant to be when matching sift features (A fraction. 1 is strict. ~0 is lenient.) 
+float32 tolerance
+# Holds the name and/or signature of the object to be extracted
+doro_msgs/TableObject signature
+---
+doro_msgs/TableObjectArray objects
