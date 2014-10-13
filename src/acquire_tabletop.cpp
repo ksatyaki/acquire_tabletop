@@ -378,7 +378,6 @@ bool AcquireTabletopServer::serverCB(AcquireTabletopRequest& request, AcquireTab
 		if( (start_x < 195 && end_x < 195) || (start_x > 453 && end_x > 453) ||
 				(start_y < 162 && end_y < 162) || (end_y > 358 && start_y > 358) )
 		{
-			cluster_names.push_back("");
 			//ROS_INFO("UnSeen: %s", cluster_names[i].c_str());
 
 			char object_name_with_num[20];
