@@ -152,7 +152,7 @@ void AcquireTabletopServer::getDescriptorsFromTuples()
 	char _key[30];
 	//descriptors_.resize(image_numbers);
 
-	int id_for_tuple = CAM_PEIS_ID; //peiskmt_peisid();
+	int id_for_tuple = 111; //peiskmt_peisid();
 
 	ros_over_peis::Subscriber <doro_msgs::SiftDescriptor> image_from_peis_sub1 ("tropicana.sift_descriptor.header");
 	ros_over_peis::Subscriber <doro_msgs::SiftDescriptor> image_from_peis_sub2 ("ibumetin.sift_descriptor.header");
@@ -611,8 +611,8 @@ void AcquireTabletopServer::anchorUsingSignature(doro_msgs::TableObject& object,
 						((int) (object.color[2]) < (total_tolerance + (int)it->color[2]) && (int) (object.color[2]) > ((int) (it->color[2]) - total_tolerance) ) )
 				{
 					match_count[k]++;
-					ROS_INFO("COLOR MATCH");
-					std::cout<<object;
+					//ROS_INFO("COLOR MATCH");
+					//std::cout<<object;
 				}
 		}
 
