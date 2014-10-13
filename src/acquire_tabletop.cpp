@@ -633,6 +633,7 @@ void AcquireTabletopServer::anchorUsingSignature(doro_msgs::TableObject& object,
 			{
 				match_count[k]++;
 				ROS_INFO("SIZE MATCH");
+				std::cout<<object;
 			}
 		}
 
