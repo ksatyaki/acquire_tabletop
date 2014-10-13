@@ -624,16 +624,15 @@ void AcquireTabletopServer::anchorUsingSignature(doro_msgs::TableObject& object,
 		if(it->cluster_size.size() != 0)
 		{
 
-			if(object.cluster_size[0] < (total_size_tolerance + it->cluster_size[0]) ||
-					object.cluster_size[0] > (it->cluster_size[0] - total_size_tolerance) ||
-					object.cluster_size[1] < (total_size_tolerance + it->cluster_size[1]) ||
-					object.cluster_size[1] > (it->cluster_size[1] - total_size_tolerance) ||
-					object.cluster_size[2] < (total_size_tolerance + it->cluster_size[2]) ||
+			if(object.cluster_size[0] < (total_size_tolerance + it->cluster_size[0]) &&
+					object.cluster_size[0] > (it->cluster_size[0] - total_size_tolerance) &&
+					object.cluster_size[1] < (total_size_tolerance + it->cluster_size[1]) &&
+					object.cluster_size[1] > (it->cluster_size[1] - total_size_tolerance) &&
+					object.cluster_size[2] < (total_size_tolerance + it->cluster_size[2]) &&
 					object.cluster_size[2] > (it->cluster_size[2] - total_size_tolerance) )
 			{
 				match_count[k]++;
-				ROS_INFO("SIZE MATCH");
-				std::cout<<object;
+				//ROS_INFO("SIZE MATCH: %f < %f", );
 			}
 		}
 
