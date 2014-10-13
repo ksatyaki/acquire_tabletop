@@ -590,7 +590,7 @@ void AcquireTabletopServer::anchorUsingSignature(doro_msgs::TableObject& object,
 		match_count[i] = 0;
 
 	int max_match_count_index = 0;
-	int total_tolerance = (int) (50 * (1.00 + tolerance));
+	int total_tolerance = (int) (50.00 * (1.00 + tolerance));
 	float total_size_tolerance = (0.025 * (1.00 + tolerance));
 
 	int k = 0;
@@ -606,11 +606,13 @@ void AcquireTabletopServer::anchorUsingSignature(doro_msgs::TableObject& object,
 		if(it->color.size() == 3)
 		{
 
-				if( (object.color[0] < (total_tolerance + it->color[0]) && object.color[0] > (it->color[0] - total_tolerance) ) &&
-						(object.color[1] < (total_tolerance + it->color[1]) && object.color[1] > (it->color[1] - total_tolerance) ) &&
-						(object.color[2] < (total_tolerance + it->color[2]) && object.color[2] > (it->color[2] - total_tolerance) ) )
+				if( ((int) (object.color[0]) < (total_tolerance + (int)it->color[0]) && (int) (object.color[0]) > ((int) (it->color[0]) - total_tolerance) ) &&
+						((int) (object.color[1]) < (total_tolerance + (int)it->color[1]) && (int) (object.color[1]) > ((int) (it->color[1]) - total_tolerance) ) &&
+						((int) (object.color[2]) < (total_tolerance + (int)it->color[2]) && (int) (object.color[2]) > ((int) (it->color[2]) - total_tolerance) ) )
 				{
 					match_count[k]++;
+					ROS_INFO("COLOR MATCH");
+					std::cout<<object;
 				}
 		}
 
@@ -630,6 +632,7 @@ void AcquireTabletopServer::anchorUsingSignature(doro_msgs::TableObject& object,
 					object.cluster_size[2] > (it->cluster_size[2] - total_size_tolerance) )
 			{
 				match_count[k]++;
+				ROS_INFO("SIZE MATCH");
 			}
 		}
 
