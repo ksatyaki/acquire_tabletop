@@ -589,10 +589,10 @@ void AcquireTabletopServer::anchorUsingSignature(doro_msgs::TableObject& object,
 	for(int i = 0; i < match_count.size(); i++)
 		match_count[i] = 0;
 
-	std::cout<<cam_objects_;
+	//std::cout<<cam_objects_;
 	int max_match_count_index = 0;
-	int total_tolerance = (int) (50.00 * (1.00 + tolerance));
-	float total_size_tolerance = (0.005* (1.00 + tolerance));
+	int total_tolerance = (int) (50.00 * (1.00 + (1.00 - tolerance) ));
+	float total_size_tolerance = (0.005* (1.00 + (1.00 - tolerance) ));
 
 	int k = 0;
 	for(doro_msgs::TableObjectArray::_table_objects_type::iterator it = cam_objects_.table_objects.begin();
@@ -653,7 +653,9 @@ void AcquireTabletopServer::anchorUsingSignature(doro_msgs::TableObject& object,
 		object.id = cam_objects_.table_objects[max_match_count_index].id;
 	}
 	else
-		printf("\nNo match in anchoring process.\nmatch_count(last): %d, match_count(lastButOne): %d", match_count[match_count.size()-1], match_count[match_count.size()-2]);
+	{
+		//printf("\nNo match in anchoring process.\nmatch_count(last): %d, match_count(lastButOne): %d", match_count[match_count.size()-1], match_count[match_count.size()-2]);
+	}
 }
 
 std::string AcquireTabletopServer::processImage(const cv::Mat& test_image, const float& tolerance)
