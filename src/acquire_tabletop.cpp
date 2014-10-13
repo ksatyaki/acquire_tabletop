@@ -592,7 +592,7 @@ void AcquireTabletopServer::anchorUsingSignature(doro_msgs::TableObject& object,
 	std::cout<<cam_objects_;
 	int max_match_count_index = 0;
 	int total_tolerance = (int) (50.00 * (1.00 + tolerance));
-	float total_size_tolerance = (0.025 * (1.00 + tolerance));
+	float total_size_tolerance = (0.005* (1.00 + tolerance));
 
 	int k = 0;
 	for(doro_msgs::TableObjectArray::_table_objects_type::iterator it = cam_objects_.table_objects.begin();
