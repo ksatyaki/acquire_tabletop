@@ -156,7 +156,7 @@ protected:
 	/**
 	 * Try to match the table_object with one in the CAM.
 	 */
-	void anchorUsingSignature(doro_msgs::TableObject& object);
+	void anchorUsingSignature(doro_msgs::TableObject& object, const float& tolerance);
 
 	/**
 	 * Cut image into pieces.

@@ -187,39 +187,36 @@ void AcquireTabletopServer::getDescriptorsFromTuples()
 
 
 	PeisTuple* recd_tuple1 = peiskmt_getTuple(id_for_tuple, "tropicana.sift_descriptor.data", PEISK_KEEP_OLD);
+	printf("Getting data tuple 0...");
 	while(!recd_tuple1)
 	{
 		recd_tuple1 = peiskmt_getTuple(id_for_tuple, "tropicana.sift_descriptor.data", PEISK_KEEP_OLD);
-		printf("Getting data tuple 0...\n");
 		sleep(1);
 	}
 
 	PeisTuple* recd_tuple2 = peiskmt_getTuple(id_for_tuple, "ibumetin.sift_descriptor.data", PEISK_KEEP_OLD);
+	printf("Getting data tuple 1...\n");
 	while(!recd_tuple2)
 	{
 		recd_tuple2 = peiskmt_getTuple(id_for_tuple, "ibumetin.sift_descriptor.data", PEISK_KEEP_OLD);
-		printf("Getting data tuple 1...\n");
 		sleep(1);
 	}
 
 	PeisTuple* recd_tuple3 = peiskmt_getTuple(id_for_tuple, "pandonil.sift_descriptor.data", PEISK_KEEP_OLD);
+	printf("Getting data tuple 2...\n");
 	while(!recd_tuple3)
 	{
 		recd_tuple3 = peiskmt_getTuple(id_for_tuple, "pandonil.sift_descriptor.data", PEISK_KEEP_OLD);
-		printf("Getting data tuple 2...\n");
 		sleep(1);
 	}
 
 	PeisTuple* recd_tuple4 = peiskmt_getTuple(id_for_tuple, "yoggi.sift_descriptor.data", PEISK_KEEP_OLD);
+	printf("Getting data tuple 3...\n");
 	while(!recd_tuple4)
 	{
 		recd_tuple4 = peiskmt_getTuple(id_for_tuple, "yoggi.sift_descriptor.data", PEISK_KEEP_OLD);
-		printf("Getting data tuple 3...\n");
 		sleep(1);
 	}
-
-	printf("Deserializing...\n");
-
 
 	/** DESERIALIZE TO CV_MAT **/
 	cv::Mat recd_mat1(desc1->rows, desc1->cols, desc1->elem_type, (uchar *) recd_tuple1->data);
@@ -237,7 +234,7 @@ void AcquireTabletopServer::getDescriptorsFromTuples()
 	ids_.push_back(desc3->id);
 	ids_.push_back(desc4->id);
 
-	std::cout<<descriptors_[0];
+	//std::cout<<descriptors_[0];
 
 	ROS_INFO("Done: Succeeded reading PEIS Tuples for SIFT Descriptors...");
 }
@@ -362,6 +359,8 @@ bool AcquireTabletopServer::serverCB(AcquireTabletopRequest& request, AcquireTab
 	bool pruned = false;
 
 	std::vector <std::string> cluster_names;
+	int unknown_num = 0;
+	int unseen_num = 0;
 
 	for(int i = 0; i < clusters_ptr_->clusters.size(); i++)
 	{
@@ -370,8 +369,8 @@ bool AcquireTabletopServer::serverCB(AcquireTabletopRequest& request, AcquireTab
 		int start_y = clusters_ptr_->clusters[i].window[1];
 		int end_y = clusters_ptr_->clusters[i].window[3];;
 
-		start_x -= 30;
-		end_x -= 30;
+		//start_x -= 30;
+		//end_x -= 30;
 
 
 		//ROS_INFO("Widths: (%d,%d) and (%d,%d)", start_x, start_y, end_x, end_y);
@@ -379,8 +378,13 @@ bool AcquireTabletopServer::serverCB(AcquireTabletopRequest& request, AcquireTab
 		if( (start_x < 195 && end_x < 195) || (start_x > 453 && end_x > 453) ||
 				(start_y < 162 && end_y < 162) || (end_y > 358 && start_y > 358) )
 		{
-			cluster_names.push_back("unseen_object_");
-			ROS_INFO("UnSeen: %s", cluster_names[i].c_str());
+			cluster_names.push_back("");
+			//ROS_INFO("UnSeen: %s", cluster_names[i].c_str());
+
+			char object_name_with_num[20];
+			sprintf(object_name_with_num, "unseen_object_%d", unseen_num);
+			cluster_names.push_back(object_name_with_num);
+			unseen_num++;
 			continue;
 		}
 
@@ -406,7 +410,17 @@ bool AcquireTabletopServer::serverCB(AcquireTabletopRequest& request, AcquireTab
 
 		cv::Mat new_part = cutImage(test_image->image, cam_s_y, cam_s_x, cam_e_y-cam_s_y, cam_e_x-cam_s_x);
 
-		cluster_names.push_back(processImage(new_part, tole));
+		//cv::imshow("sucks", new_part);
+		//cv::waitKey(0);
+		std::string name_from_sift = processImage(new_part, tole);
+		if(name_from_sift.find("unknown_object") != std::string::npos)
+		{
+			char object_number[4];
+			sprintf(object_number, "%d", unknown_num);
+			name_from_sift += object_number;
+			unknown_num++;
+		}
+		cluster_names.push_back(name_from_sift);
 		//ROS_INFO("Seen: %s", cluster_names[i].c_str());
 	}
 
@@ -425,16 +439,20 @@ bool AcquireTabletopServer::serverCB(AcquireTabletopRequest& request, AcquireTab
 
 		/* ********************************************************************** *
 		 * This is the part where we anchor! We set the id (symbol) to a value by *
-		 * using the sift matching. If sift_can't find it, we use other signature *
+		 * using the sift matching. If sift can't find it, we use other signature *
 		 * values and compare it to the features here.                            *
 		 * ********************************************************************** */
 
-		if(cluster_names[i].find("unseen") != std::string::npos || cluster_names[i].find("unknown") != std::string::npos)
+		// Stage 1: Using sift recognized id.
+		__object.id = cluster_names[i];
+
+		// Stage 2: Using signatures from CAM.
+		if(cluster_names[i].find("unseen") != std::string::npos ||
+		   cluster_names[i].find("unknown") != std::string::npos ||
+		   cluster_names[i].empty())
 		{
-			anchorUsingSignature(__object);
+			anchorUsingSignature(__object, tole);
 		}
-		else
-			__object.id = cluster_names[i];
 
 		response.objects.table_objects.push_back(__object);
 	}
@@ -465,7 +483,7 @@ bool AcquireTabletopServer::serverCB(AcquireTabletopRequest& request, AcquireTab
 		pruned = true;
 	}
 	else
-		ROS_INFO("Size = 0. Size Ignored.");
+		ROS_INFO("Size Ignored.");
 
 
 	if(request.signature.color.size() == 3)
@@ -490,7 +508,7 @@ bool AcquireTabletopServer::serverCB(AcquireTabletopRequest& request, AcquireTab
 
 	}
 	else
-		ROS_INFO("color_size = 0. Color Ignored.");
+		ROS_INFO("Color Ignored.");
 
 	if(request.signature.centroid.x != 0.0 && request.signature.centroid.y != 0.0 && request.signature.centroid.z != 0.0)
 	{
@@ -517,7 +535,7 @@ bool AcquireTabletopServer::serverCB(AcquireTabletopRequest& request, AcquireTab
 		pruned = true;
 	}
 	else
-		ROS_INFO("centroid = 0,0,0. Location Ignored.");
+		ROS_INFO("Location Ignored.");
 
 
 
@@ -537,7 +555,7 @@ bool AcquireTabletopServer::serverCB(AcquireTabletopRequest& request, AcquireTab
 		else if(request.type == request.NAME &&
 				iter_obj->id.compare(request.signature.id) != 0)
 		{
-			ROS_INFO("%s != %s", iter_obj->id.c_str(), request.signature.id.c_str());
+			//ROS_INFO("%s != %s", iter_obj->id.c_str(), request.signature.id.c_str());
 			response.objects.table_objects.erase(iter_obj);
 			iter_obj--;
 			continue;
@@ -557,7 +575,7 @@ bool AcquireTabletopServer::serverCB(AcquireTabletopRequest& request, AcquireTab
 
 }
 
-void AcquireTabletopServer::anchorUsingSignature(doro_msgs::TableObject& object)
+void AcquireTabletopServer::anchorUsingSignature(doro_msgs::TableObject& object, const float& tolerance)
 {
 	doro_msgs::TableObjectArray::_table_objects_type::iterator last_match = cam_objects_.table_objects.end();
 
@@ -573,6 +591,8 @@ void AcquireTabletopServer::anchorUsingSignature(doro_msgs::TableObject& object)
 		match_count[i] = 0;
 
 	int max_match_count_index = 0;
+	int total_tolerance = (int) (50 * (1.00 + tolerance));
+	float total_size_tolerance = (0.025 * (1.00 + tolerance));
 
 	int k = 0;
 	for(doro_msgs::TableObjectArray::_table_objects_type::iterator it = cam_objects_.table_objects.begin();
@@ -580,34 +600,16 @@ void AcquireTabletopServer::anchorUsingSignature(doro_msgs::TableObject& object)
 			it++)
 	{
 
-		// ***************** //
-		// BASED ON POSITION //
-		// ***************** //
-		if(it->centroid.x != 0.0 && it->centroid.y != 0.0 && it->centroid.z != 0.0)
-		{
-
-				if( ( (object.centroid.x < (it->centroid.x + it->centroid_tolerance.x) ) &&
-						(object.centroid.x > (it->centroid.x - it->centroid_tolerance.x) ) ) &&
-
-						( (object.centroid.y < (it->centroid.y + it->centroid_tolerance.y) ) &&
-								(object.centroid.y > (it->centroid.y - it->centroid_tolerance.y) ) ) &&
-
-								( (object.centroid.z < (it->centroid.z + it->centroid_tolerance.z) ) &&
-										(object.centroid.z > (it->centroid.z - it->centroid_tolerance.z) ) ) )
-				{
-					match_count[k]++;
-				}
-		}
-
 		// ************** //
 		// BASED ON COLOR //
 		// ************** //
 
 		if(it->color.size() == 3)
 		{
-				if( (object.color[0] < (50 + it->color[0]) && object.color[0] > (it->color[0] - 50) ) &&
-						(object.color[1] < (50 + it->color[1]) && object.color[1] > (it->color[1] - 50) ) &&
-						(object.color[2] < (50 + it->color[2]) && object.color[2] > (it->color[2] - 50) ) )
+
+				if( (object.color[0] < (total_tolerance + it->color[0]) && object.color[0] > (it->color[0] - total_tolerance) ) &&
+						(object.color[1] < (total_tolerance + it->color[1]) && object.color[1] > (it->color[1] - total_tolerance) ) &&
+						(object.color[2] < (total_tolerance + it->color[2]) && object.color[2] > (it->color[2] - total_tolerance) ) )
 				{
 					match_count[k]++;
 				}
@@ -621,12 +623,12 @@ void AcquireTabletopServer::anchorUsingSignature(doro_msgs::TableObject& object)
 		if(it->cluster_size.size() != 0)
 		{
 
-			if(object.cluster_size[0] < (0.025 + it->cluster_size[0]) ||
-					object.cluster_size[0] > (it->cluster_size[0] - 0.025) ||
-					object.cluster_size[1] < (0.025 + it->cluster_size[1]) ||
-					object.cluster_size[1] > (it->cluster_size[1] - 0.025) ||
-					object.cluster_size[2] < (0.025 + it->cluster_size[2]) ||
-					object.cluster_size[2] > (it->cluster_size[2] - 0.025) )
+			if(object.cluster_size[0] < (total_size_tolerance + it->cluster_size[0]) ||
+					object.cluster_size[0] > (it->cluster_size[0] - total_size_tolerance) ||
+					object.cluster_size[1] < (total_size_tolerance + it->cluster_size[1]) ||
+					object.cluster_size[1] > (it->cluster_size[1] - total_size_tolerance) ||
+					object.cluster_size[2] < (total_size_tolerance + it->cluster_size[2]) ||
+					object.cluster_size[2] > (it->cluster_size[2] - total_size_tolerance) )
 			{
 				match_count[k]++;
 			}
@@ -648,7 +650,7 @@ void AcquireTabletopServer::anchorUsingSignature(doro_msgs::TableObject& object)
 		object.id = cam_objects_.table_objects[max_match_count_index].id;
 	}
 	else
-		printf("No match in anchoring process.");
+		printf("\nNo match in anchoring process.\nmatch_count(last): %d, match_count(lastButOne): %d", match_count[match_count.size()-1], match_count[match_count.size()-2]);
 }
 
 std::string AcquireTabletopServer::processImage(const cv::Mat& test_image, const float& tolerance)
