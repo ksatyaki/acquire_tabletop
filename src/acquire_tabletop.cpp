@@ -302,7 +302,7 @@ cv::Mat AcquireTabletopServer::cutImage(const cv::Mat& input_image, int row_offs
 		row_size = input_image.rows - row_offset;
 		col_size = input_image.cols - col_offset;
 
-		std::cout<<"burr";
+		//std::cout<<"burr";
 	}
 
 	cv::Mat temp(row_size, col_size, 0);
@@ -335,7 +335,6 @@ bool AcquireTabletopServer::serverCB(AcquireTabletopRequest& request, AcquireTab
 	{
 		if(clusters_ptr_)
 			ROS_INFO("We have the clusters.");
-
 		sleep(1);
 	}
 
@@ -391,10 +390,10 @@ bool AcquireTabletopServer::serverCB(AcquireTabletopRequest& request, AcquireTab
 		// Transform the window from xtion camera indices to conventional camera indices //
 		// ********************************************************************** //
 
-		int cam_s_x = (int) ( (start_x - 195.00)*640.00/258.00 ) - 80;
-		int cam_s_y = (int) ( (start_y - 162.00)*480.00/196.00 ) - 80;
-		int cam_e_x = (int) ( (end_x - 195.00)*640.00/258.00 ) + 20;
-		int cam_e_y = (int) ( (end_y - 162.00)*480.00/196.00 ) + 20;
+		int cam_s_x = (int) ( (start_x - 195.00)*640.00/258.00 );// - 80;
+		int cam_s_y = (int) ( (start_y - 162.00)*480.00/196.00 );// - 80;
+		int cam_e_x = (int) ( (end_x - 195.00)*640.00/258.00 );// + 20;
+		int cam_e_y = (int) ( (end_y - 162.00)*480.00/196.00 );// + 20;
 
 		if(cam_s_x < 0)
 			cam_s_x = 0;
@@ -409,8 +408,8 @@ bool AcquireTabletopServer::serverCB(AcquireTabletopRequest& request, AcquireTab
 
 		cv::Mat new_part = cutImage(test_image->image, cam_s_y, cam_s_x, cam_e_y-cam_s_y, cam_e_x-cam_s_x);
 
-		//cv::imshow("sucks", new_part);
-		//cv::waitKey(0);
+		cv::imshow("sucks", new_part);
+		cv::waitKey(0);
 		std::string name_from_sift = processImage(new_part, tole);
 		if(name_from_sift.find("unknown_object") != std::string::npos)
 		{
