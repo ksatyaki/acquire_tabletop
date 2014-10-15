@@ -508,34 +508,6 @@ bool AcquireTabletopServer::serverCB(AcquireTabletopRequest& request, AcquireTab
 	else
 		ROS_INFO("Color Ignored.");
 
-	if(request.signature.centroid.x != 0.0 && request.signature.centroid.y != 0.0 && request.signature.centroid.z != 0.0)
-	{
-		for(std::vector<doro_msgs::TableObject>::iterator iter_obj = response.objects.table_objects.begin();
-				iter_obj != response.objects.table_objects.end();
-				iter_obj++)
-		{
-			if( ( (iter_obj->centroid.x > (request.signature.centroid.x + request.signature.centroid_tolerance.x) ) ||
-					(iter_obj->centroid.x < (request.signature.centroid.x - request.signature.centroid_tolerance.x) ) ) ||
-
-					( (iter_obj->centroid.y > (request.signature.centroid.y + request.signature.centroid_tolerance.y) ) ||
-							(iter_obj->centroid.y < (request.signature.centroid.y - request.signature.centroid_tolerance.y) ) ) ||
-
-							( (iter_obj->centroid.z > (request.signature.centroid.z + request.signature.centroid_tolerance.z) ) ||
-									(iter_obj->centroid.z < (request.signature.centroid.z - request.signature.centroid_tolerance.z) ) ) )
-			{
-				ROS_INFO("IS HERE");
-				ROS_INFO("We pruned for location. There are %d objects now.", response.objects.table_objects.size());
-				response.objects.table_objects.erase(iter_obj);
-				iter_obj--;
-			}
-		}
-		ROS_INFO("We pruned for location. There are %d objects now.", response.objects.table_objects.size());
-		pruned = true;
-	}
-	else
-		ROS_INFO("Location Ignored.");
-
-
 
 	// In this case return only the element requested.
 	// That is, we return only that element which has the same id as in the signature.
