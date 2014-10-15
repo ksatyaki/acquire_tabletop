@@ -408,8 +408,8 @@ bool AcquireTabletopServer::serverCB(AcquireTabletopRequest& request, AcquireTab
 
 		cv::Mat new_part = cutImage(test_image->image, cam_s_y, cam_s_x, cam_e_y-cam_s_y, cam_e_x-cam_s_x);
 
-		cv::imshow("sucks", new_part);
-		cv::waitKey(0);
+		//cv::imshow("sucks", new_part);
+		//cv::waitKey(0);
 		std::string name_from_sift = processImage(new_part, tole);
 		if(name_from_sift.find("unknown_object") != std::string::npos)
 		{
