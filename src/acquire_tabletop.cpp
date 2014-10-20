@@ -14,6 +14,7 @@ AcquireTabletopServer::AcquireTabletopServer()
 	clusters_sub_ = nh_.subscribe("/clusters", 1, &AcquireTabletopServer::clustersCB, this);
 	server_ = nh_.advertiseService("acquire_tabletop", &AcquireTabletopServer::serverCB, this);
 
+	cam_interface::subscribeToCAM();
 	tf_listener_ = boost::shared_ptr <tf::TransformListener> (new tf::TransformListener (ros::Duration(10.0)));
 	prepare();
 	subscribed_ = false;
@@ -46,7 +47,6 @@ AcquireTabletopServer::~AcquireTabletopServer()
 
 void AcquireTabletopServer::prepare()
 {
-
 	ROS_INFO("Preparing the registry of descriptors...");
 	getDescriptorsFromTuples();
 	//flase_prep();
