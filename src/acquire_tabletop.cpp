@@ -152,7 +152,7 @@ void AcquireTabletopServer::getDescriptorsFromTuples()
 	char _key[30];
 	//descriptors_.resize(image_numbers);
 
-	int id_for_tuple = 111; //peiskmt_peisid();
+	int id_for_tuple = 9898; //peiskmt_peisid();
 
 	ros_over_peis::Subscriber <doro_msgs::SiftDescriptor> image_from_peis_sub1 ("tropicana.sift_descriptor.header");
 	ros_over_peis::Subscriber <doro_msgs::SiftDescriptor> image_from_peis_sub2 ("ibumetin.sift_descriptor.header");
