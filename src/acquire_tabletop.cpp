@@ -24,16 +24,17 @@ AcquireTabletopServer::AcquireTabletopServer()
 void AcquireTabletopServer::clustersCB(const doro_msgs::ClusterArrayConstPtr& _clusters)
 {
 	// Create space for new message
-	clusters_ptr_ = doro_msgs::ClusterArrayPtr (new doro_msgs::ClusterArray);
+	//clusters_ptr_ = doro_msgs::ClusterArrayPtr (new doro_msgs::ClusterArray);
 
 	ROS_INFO("Fetching clusters.");
 	// Copy
-	*clusters_ptr_ = *_clusters;
+	clusters_ptr_ = _clusters;
 }
 
 void AcquireTabletopServer::imageCallback(const sensor_msgs::ImageConstPtr& _msg)
 {
-	image_ = sensor_msgs::ImagePtr(new sensor_msgs::Image(*_msg));
+	//image_ = sensor_msgs::ImagePtr(new sensor_msgs::Image(*_msg));
+	image_ = _msg;
 }
 
 
@@ -84,65 +85,49 @@ void AcquireTabletopServer::flase_prep()
 }
 
 
-*
+*/
 void AcquireTabletopServer::getDescriptorsFromTuples()
 {
+	std::vector<std::string> object_names = cam_interface::getAllObjectNamesFromCAM();
 
-	char _key[30];
-	//descriptors_.resize(image_numbers);
-
-	int NUM_OF_IMAGES = 4;
-	std::vector<std::string> object_names;
-	object_names.push_back("tropicana");
-	object_names.push_back("ibumetin");
-	object_names.push_back("pandonil");
-	object_names.push_back("yoggi");
-
-	int id_for_tuple = 111; //peiskmt_peisid();
-
-	ros_over_peis::Subscriber <doro_msgs::SiftDescriptor> image_from_peis_sub[NUM_OF_IMAGES];
-	doro_msgs::SiftDescriptor::Ptr desc[NUM_OF_IMAGES];
-	PeisTuple* recd_tuple[NUM_OF_IMAGES];
+	int id_for_tuple = CAM_PEIS_ID; //peiskmt_peisid();
 
 	ROS_INFO("Preparing ...");
-
-	for(int i = 0; i < NUM_OF_IMAGES; i++)
+	int i = 0;
+	for(std::vector<std::string>::iterator it = object_names.begin(); it != object_names.end(); it++)
 	{
-		// Subscribe to data tuple;
-		peiskmt_subscribe(id_for_tuple, std::string(object_names[i] + ".sift_descriptor.data").c_str());
+		ros_over_peis::Subscriber <doro_msgs::SiftDescriptor> image_from_peis_sub ((*it + ".sift_descriptor.header").c_str());
+		doro_msgs::SiftDescriptor::Ptr desc;
+		PeisTuple* recd_tuple;
 
-		image_from_peis_sub[0].setTupleKey(object_names[i] + ".sift_descriptor.header");
-		image_from_peis_sub[0].subscribe();
-
-		desc[i] = doro_msgs::SiftDescriptor::Ptr(new doro_msgs::SiftDescriptor);
-		image_from_peis_sub[i].getMsg(desc[i]);
-		while(!desc[i])
+		image_from_peis_sub.getMsg(desc);
+		while(!desc)
 		{
-			image_from_peis_sub[i].getMsg(desc[i]);
+			image_from_peis_sub.getMsg(desc);
 			printf("Getting descriptor tuple %d...\n", i);
 		}
 
-		recd_tuple[i] = peiskmt_getTuple(id_for_tuple, std::string(object_names[i] + ".sift_descriptor.data").c_str(), PEISK_KEEP_OLD);
-		while(!recd_tuple[i])
+		recd_tuple = peiskmt_getTuple(id_for_tuple, std::string(*it + ".sift_descriptor.data").c_str(), PEISK_KEEP_OLD);
+		while(!recd_tuple)
 		{
-			recd_tuple[i] = peiskmt_getTuple(id_for_tuple, std::string(object_names[i] + ".sift_descriptor.data").c_str(), PEISK_KEEP_OLD);
+			recd_tuple = peiskmt_getTuple(id_for_tuple, std::string(*it + ".sift_descriptor.data").c_str(), PEISK_KEEP_OLD);
 			printf("Getting data tuple %d...\n", i);
 			sleep(1);
 		}
 		printf("Deserializing...\n");
-		cv::Mat recd_mat(desc[i]->rows, desc[i]->cols, desc[i]->elem_type, (uchar *) recd_tuple[i]->data);
+		cv::Mat recd_mat(desc->rows, desc->cols, desc->elem_type, (uchar *) recd_tuple->data);
 		descriptors_.push_back(recd_mat.clone());
-		ids_.push_back(desc[i]->id);
+		ids_.push_back(desc->id);
+		i++;
 	}
 
 	sleep(1);
-
 
 	std::cout<<descriptors_[0];
 
 	ROS_INFO("Done: Succeeded reading PEIS Tuples for SIFT Descriptors...");
 }
-*/
+/*
 
 void AcquireTabletopServer::getDescriptorsFromTuples()
 {
@@ -218,7 +203,7 @@ void AcquireTabletopServer::getDescriptorsFromTuples()
 		sleep(1);
 	}
 
-	/** DESERIALIZE TO CV_MAT **/
+	/** DESERIALIZE TO CV_MAT /
 	cv::Mat recd_mat1(desc1->rows, desc1->cols, desc1->elem_type, (uchar *) recd_tuple1->data);
 	cv::Mat recd_mat2(desc2->rows, desc2->cols, desc2->elem_type, (uchar *) recd_tuple2->data);
 	cv::Mat recd_mat3(desc3->rows, desc3->cols, desc3->elem_type, (uchar *) recd_tuple3->data);
@@ -238,6 +223,7 @@ void AcquireTabletopServer::getDescriptorsFromTuples()
 
 	ROS_INFO("Done: Succeeded reading PEIS Tuples for SIFT Descriptors...");
 }
+*/
 
 void AcquireTabletopServer::matchWithRegistry(const cv::Mat& _input_descriptors, const float& tolerance)
 {
@@ -342,7 +328,7 @@ bool AcquireTabletopServer::serverCB(AcquireTabletopRequest& request, AcquireTab
 
 	// Get the image from the rgb/image_raw topic.
 
-	image_raw_sub_ = nh_.subscribe("image", 1, &AcquireTabletopServer::imageCallback, this);
+	image_raw_sub_ = nh_.subscribe("image", 2, &AcquireTabletopServer::imageCallback, this);
 	while(!image_)
 	{
 		//ROS_INFO("Waiting for the camera image...");
@@ -353,7 +339,9 @@ bool AcquireTabletopServer::serverCB(AcquireTabletopRequest& request, AcquireTab
 
 	//ROS_INFO("Processing image...");
 	cv_bridge::CvImagePtr test_image;
-	test_image = cv_bridge::toCvCopy(image_);
+
+	sensor_msgs::ImageConstPtr _image_for_processing_ = image_;
+	test_image = cv_bridge::toCvCopy(_image_for_processing_);
 
 	bool pruned = false;
 

@@ -18,6 +18,8 @@ find_package(catkin REQUIRED COMPONENTS
 
 find_package(OpenCV REQUIRED)
 
+find_package(Boost REQUIRED system)
+
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
 
@@ -105,6 +107,7 @@ include_directories(include)
 include_directories(
   ${catkin_INCLUDE_DIRS}
   ${OpenCV_INCLUDE_DIRS}
+  ${Boost_INCLUDE_DIRS}
 )
 
 ## Declare a cpp library
@@ -122,10 +125,22 @@ add_dependencies(acquire_tabletop_server cam_interface)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(acquire_tabletop_server
-  ${catkin_LIBRARIES}
   ${OpenCV_LIBRARIES}
+  ${catkin_LIBRARIES}
+  opencv_nonfree
   peiskernel_mt
 )
+
+add_executable (from_files_to_peis_tuples src/from_files_to_peis_tuples.cpp)
+add_dependencies (from_files_to_peis_tuples doro_msgs_generate_messages_cpp)
+
+target_link_libraries (from_files_to_peis_tuples
+    ${OpenCV_LIBRARIES}
+    ${Boost_LIBRARIES}
+    ${catkin_LIBRARIES}
+    opencv_nonfree
+    peiskernel_mt
+) 
 
 #############
 ## Install ##
