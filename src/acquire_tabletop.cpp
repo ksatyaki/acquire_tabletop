@@ -252,12 +252,12 @@ void AcquireTabletopServer::matchWithRegistry(const cv::Mat& _input_descriptors,
 			return;
 		}
 		matcher.match(_input_descriptors, descriptors_[i], matches);
-		//ROS_INFO("Match number %d has %d features b4 filtering.", i, matches.size());
+		//ROS_INFO("****(((%s)))**** has %d features b4 filtering.", ids_[i].c_str(), matches.size());
 
 		for(std::vector <cv::DMatch>::iterator it = matches.begin(); it != matches.end(); it++)
 			for(std::vector <cv::DMatch>::iterator jt = matches.begin() + 1; jt != matches.end(); jt++)
 			{
-				if(it->distance < 0.30*jt->distance)
+				if(it->distance < 0.40*jt->distance)
 				{
 					matches_filtered.push_back(*it);
 					break;
@@ -266,7 +266,7 @@ void AcquireTabletopServer::matchWithRegistry(const cv::Mat& _input_descriptors,
 
 		if(matches_filtered.size() < 10 * (tolerance))
 		{
-			//ROS_INFO("Match number %d has %d features. Not enough.", i, matches_filtered.size());
+			//ROS_INFO(" ****(((%s)))**** has %d features.", ids_[i].c_str(), matches_filtered.size());
 			matches_filtered.clear();
 		}
 		else
@@ -362,8 +362,24 @@ bool AcquireTabletopServer::serverCB(AcquireTabletopRequest& request, AcquireTab
 
 		//ROS_INFO("Widths: (%d,%d) and (%d,%d)", start_x, start_y, end_x, end_y);
 
-		if( (start_x < 195 && end_x < 195) || (start_x > 453 && end_x > 453) ||
-				(start_y < 162 && end_y < 162) || (end_y > 358 && start_y > 358) )
+		// ANGEN PARAMETERS
+//		const int START_INDEX_X = 195;
+//		const int START_INDEX_Y = 162;
+//		const int END_INDEX_X = 453;
+//		const int END_INDEX_Y = 358;
+//		const int correction_1 = 80;
+//		const int correction_2 = 20;
+
+		// PECCIOLI PARAMETERS
+		const int START_INDEX_X = 213;
+		const int START_INDEX_Y = 200;
+		const int END_INDEX_X = 540;
+		const int END_INDEX_Y = 440;
+		const int correction_1 = 10;
+		const int correction_2 = -10;
+
+		if( (start_x < START_INDEX_X && end_x < START_INDEX_X) || (start_x > END_INDEX_X && end_x > END_INDEX_X) ||
+				(start_y < START_INDEX_Y && end_y < START_INDEX_Y) || (end_y > END_INDEX_Y && start_y > END_INDEX_Y) )
 		{
 			//ROS_INFO("UnSeen: %s", cluster_names[i].c_str());
 
@@ -379,25 +395,27 @@ bool AcquireTabletopServer::serverCB(AcquireTabletopRequest& request, AcquireTab
 		// ********************************************************************** //
 		int cam_s_x, cam_s_y, cam_e_x, cam_e_y;
 
-		if(start_x < 195.00)
+		if(start_x < (float) START_INDEX_X)
 			cam_s_x = 0;
 		else
-			cam_s_x = (int) ( (start_x - 195.00)*640.00/258.00 ) - 80;
+			cam_s_x = (int) ( (start_x - (float) START_INDEX_X)*640.00/ (float) (END_INDEX_X - START_INDEX_X)) - correction_1;
 
-		if(start_y < 162.00)
+		if(start_y < (float) START_INDEX_Y)
 			cam_s_y = 0;
 		else
-			cam_s_y = (int) ( (start_y - 162.00)*480.00/196.00 ) - 80;
+			cam_s_y = (int) ( (start_y - (float) START_INDEX_Y)*480.00/ (float) (END_INDEX_Y - START_INDEX_Y)) - correction_1;
 
-		if(end_x < 195.00)
+		if(end_x < (float) START_INDEX_X)
 			cam_e_x = 0;
 		else
-			cam_e_x = (int) ( (end_x - 195.00)*640.00/258.00 ) - 20;
+			cam_e_x = (int) ( (end_x - (float) START_INDEX_X)*640.00/ (float) (END_INDEX_X - START_INDEX_X)) - correction_2;
 
-		if(end_y < 162.00)
+		if(end_y < (float) START_INDEX_Y)
 			cam_e_y = 0;
 		else
-			cam_e_y = (int) ( (end_y - 162.00)*480.00/196.00 ) - 20;
+			cam_e_y = (int) ( (end_y - (float) START_INDEX_Y)*480.00/ (float) (END_INDEX_Y - START_INDEX_Y)) - correction_2;
+
+		// This is needed because a part of the object may still be in the view.
 
 		if(cam_s_x < 0)
 			cam_s_x = 0;
