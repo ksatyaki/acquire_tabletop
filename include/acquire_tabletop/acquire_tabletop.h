@@ -30,7 +30,7 @@
 
 #include <doro_msgs/SiftDescriptor.h>
 #include <doro_msgs/ClusterArray.h>
-#include <doro_msgs/RecognizedObjectArray.h>
+#include <sensor_msgs/CameraInfo.h>
 
 #include <acquire_tabletop/AcquireTabletop.h>
 #include <cam_interface/cam_interface.h>
@@ -57,6 +57,26 @@ protected:
 	 * A subscriber for the clusters.
 	 */
 	ros::Subscriber clusters_sub_;
+
+	/**
+	 * A subscriber for the Camera Info
+	 */
+	ros::Subscriber camera_info_sub_;
+
+	/**
+	 * Image height and width. From Camera Info
+	 */
+	int image_height, image_width;
+
+	/**
+	 * A Matrix to hold the Projection Matrix.
+	 */
+	boost::shared_ptr <tf::Matrix3x3> projection_matrix_;
+
+	/**
+	 * Callback fn for camera_info
+	 */
+	void cameraInfoCallback(const sensor_msgs::CameraInfoConstPtr& camera_info);
 
 	/**
 	 * A variable to hold the clusters.
@@ -128,18 +148,6 @@ protected:
 	 * Prepare the set of descriptors from the image registry.
 	 */
 	void prepare();
-
-	//void flase_prep();
-
-	/**
-	 * The array of images from the registry.
-	 */
-	//std::vector <cv::Mat> images_;
-
-	/**
-	 * The array of keypoints for the images from the registry.
-	 */
-	//std::vector <std::vector <cv::KeyPoint> > keypoints_;
 
 	/**
 	 * Fetch the descriptors from the peis tuple.

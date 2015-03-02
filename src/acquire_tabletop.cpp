@@ -14,11 +14,29 @@ AcquireTabletopServer::AcquireTabletopServer()
 	clusters_sub_ = nh_.subscribe("/clusters", 1, &AcquireTabletopServer::clustersCB, this);
 	server_ = nh_.advertiseService("acquire_tabletop", &AcquireTabletopServer::serverCB, this);
 
+	camera_info_sub_ = nh_.subscribe ("camera_info", 1, &AcquireTabletopServer::cameraInfoCallback, this);
+
 	cam_interface::subscribeToCAM();
 	tf_listener_ = boost::shared_ptr <tf::TransformListener> (new tf::TransformListener (ros::Duration(10.0)));
 	prepare();
 	subscribed_ = false;
 	ROS_INFO("Server Started!");
+}
+
+void AcquireTabletopServer::cameraInfoCallback(const sensor_msgs::CameraInfoConstPtr& camera_info)
+{
+	projection_matrix_ = boost::shared_ptr <tf::Matrix3x3> (new tf::Matrix3x3);
+	for(int i = 0; i < 3; i ++)
+	{
+		for(int j = 0; j < 3; j ++)
+		{
+			(*projection_matrix_)[i][j] = camera_info->P[i*4 + j];
+		}
+	}
+
+	image_width = camera_info->width;
+	image_height = camera_info->height;
+	camera_info_sub_.shutdown();
 }
 
 void AcquireTabletopServer::clustersCB(const doro_msgs::ClusterArrayConstPtr& _clusters)
@@ -53,42 +71,11 @@ void AcquireTabletopServer::prepare()
 	//flase_prep();
 }
 
-/*
-
-void AcquireTabletopServer::flase_prep()
-{
-	images_.push_back(cv::imread("/home/ace/chittaranjan_ros/catkin_ws/src/obj_detection/img_registry/tropicana_front.jpg", CV_LOAD_IMAGE_GRAYSCALE));
-	images_.push_back(cv::imread("/home/ace/chittaranjan_ros/catkin_ws/src/obj_detection/img_registry/ibumetin.jpg", CV_LOAD_IMAGE_GRAYSCALE));
-	images_.push_back(cv::imread("/home/ace/chittaranjan_ros/catkin_ws/src/obj_detection/img_registry/pandonil.jpg", CV_LOAD_IMAGE_GRAYSCALE));
-	images_.push_back(cv::imread("/home/ace/chittaranjan_ros/catkin_ws/src/obj_detection/img_registry/yoggi.jpg", CV_LOAD_IMAGE_GRAYSCALE));
-
-	cv::SiftFeatureDetector detector(300);
-	cv::SiftDescriptorExtractor extractor;
-
-	ids_.push_back("tropicana");
-	ids_.push_back("ibumetin");
-	ids_.push_back("pandonil");
-	ids_.push_back("yoggi");
-
-	keypoints_.resize(IMAGES_SIZE);
-	descriptors_.resize(IMAGES_SIZE);
-
-	detector.detect(images_[0], keypoints_[0]);
-	detector.detect(images_[1], keypoints_[1]);
-	detector.detect(images_[2], keypoints_[2]);
-	detector.detect(images_[3], keypoints_[3]);
-
-	extractor.compute(images_[0], keypoints_[0], descriptors_[0]);
-	extractor.compute(images_[1], keypoints_[1], descriptors_[1]);
-	extractor.compute(images_[2], keypoints_[2], descriptors_[2]);
-	extractor.compute(images_[3], keypoints_[3], descriptors_[3]);
-}
-
-
-*/
 void AcquireTabletopServer::getDescriptorsFromTuples()
 {
 	std::vector<std::string> object_names = cam_interface::getAllObjectNamesFromCAM();
+	for(std::vector <std::string>::iterator it = object_names.begin(); it != object_names.end(); it++)
+		std::cout << *it << " | ";
 
 	int id_for_tuple = CAM_PEIS_ID; //peiskmt_peisid();
 
@@ -96,6 +83,8 @@ void AcquireTabletopServer::getDescriptorsFromTuples()
 	int i = 0;
 	for(std::vector<std::string>::iterator it = object_names.begin(); it != object_names.end(); it++)
 	{
+		if(it->find("banana") != std::string::npos)
+			continue;
 		ros_over_peis::Subscriber <doro_msgs::SiftDescriptor> image_from_peis_sub ((*it + ".sift_descriptor.header").c_str());
 		doro_msgs::SiftDescriptor::Ptr desc;
 		PeisTuple* recd_tuple;
@@ -123,107 +112,10 @@ void AcquireTabletopServer::getDescriptorsFromTuples()
 
 	sleep(1);
 
-	std::cout<<descriptors_[0];
-
-	ROS_INFO("Done: Succeeded reading PEIS Tuples for SIFT Descriptors...");
-}
-/*
-
-void AcquireTabletopServer::getDescriptorsFromTuples()
-{
-
-	ROS_INFO("Preparing...");
-	const int image_numbers = 2;
-	char _key[30];
-	//descriptors_.resize(image_numbers);
-
-	int id_for_tuple = 9898; //peiskmt_peisid();
-
-	ros_over_peis::Subscriber <doro_msgs::SiftDescriptor> image_from_peis_sub1 ("tropicana.sift_descriptor.header");
-	ros_over_peis::Subscriber <doro_msgs::SiftDescriptor> image_from_peis_sub2 ("ibumetin.sift_descriptor.header");
-	ros_over_peis::Subscriber <doro_msgs::SiftDescriptor> image_from_peis_sub3 ("pandonil.sift_descriptor.header");
-	ros_over_peis::Subscriber <doro_msgs::SiftDescriptor> image_from_peis_sub4 ("yoggi.sift_descriptor.header");
-
-	doro_msgs::SiftDescriptor::Ptr desc1 = doro_msgs::SiftDescriptor::Ptr(new doro_msgs::SiftDescriptor);
-	doro_msgs::SiftDescriptor::Ptr desc2 = doro_msgs::SiftDescriptor::Ptr(new doro_msgs::SiftDescriptor);
-	doro_msgs::SiftDescriptor::Ptr desc3 = doro_msgs::SiftDescriptor::Ptr(new doro_msgs::SiftDescriptor);
-	doro_msgs::SiftDescriptor::Ptr desc4 = doro_msgs::SiftDescriptor::Ptr(new doro_msgs::SiftDescriptor);
-
-	image_from_peis_sub1.getMsg(desc1);
-	image_from_peis_sub2.getMsg(desc2);
-	image_from_peis_sub3.getMsg(desc3);
-	image_from_peis_sub4.getMsg(desc4);
-
-	while(!desc1)
-		image_from_peis_sub1.getMsg(desc1);
-	while(!desc2)
-		image_from_peis_sub2.getMsg(desc2);
-	while(!desc3)
-		image_from_peis_sub3.getMsg(desc3);
-	while(!desc4)
-		image_from_peis_sub4.getMsg(desc4);
-
-	peiskmt_subscribe(id_for_tuple, "tropicana.sift_descriptor.data");
-	peiskmt_subscribe(id_for_tuple, "ibumetin.sift_descriptor.data");
-	peiskmt_subscribe(id_for_tuple, "pandonil.sift_descriptor.data");
-	peiskmt_subscribe(id_for_tuple, "yoggi.sift_descriptor.data");
-
-	sleep(1);
-
-
-	PeisTuple* recd_tuple1 = peiskmt_getTuple(id_for_tuple, "tropicana.sift_descriptor.data", PEISK_KEEP_OLD);
-	printf("Getting data tuple 0...");
-	while(!recd_tuple1)
-	{
-		recd_tuple1 = peiskmt_getTuple(id_for_tuple, "tropicana.sift_descriptor.data", PEISK_KEEP_OLD);
-		sleep(1);
-	}
-
-	PeisTuple* recd_tuple2 = peiskmt_getTuple(id_for_tuple, "ibumetin.sift_descriptor.data", PEISK_KEEP_OLD);
-	printf("Getting data tuple 1...\n");
-	while(!recd_tuple2)
-	{
-		recd_tuple2 = peiskmt_getTuple(id_for_tuple, "ibumetin.sift_descriptor.data", PEISK_KEEP_OLD);
-		sleep(1);
-	}
-
-	PeisTuple* recd_tuple3 = peiskmt_getTuple(id_for_tuple, "pandonil.sift_descriptor.data", PEISK_KEEP_OLD);
-	printf("Getting data tuple 2...\n");
-	while(!recd_tuple3)
-	{
-		recd_tuple3 = peiskmt_getTuple(id_for_tuple, "pandonil.sift_descriptor.data", PEISK_KEEP_OLD);
-		sleep(1);
-	}
-
-	PeisTuple* recd_tuple4 = peiskmt_getTuple(id_for_tuple, "yoggi.sift_descriptor.data", PEISK_KEEP_OLD);
-	printf("Getting data tuple 3...\n");
-	while(!recd_tuple4)
-	{
-		recd_tuple4 = peiskmt_getTuple(id_for_tuple, "yoggi.sift_descriptor.data", PEISK_KEEP_OLD);
-		sleep(1);
-	}
-
-	/** DESERIALIZE TO CV_MAT /
-	cv::Mat recd_mat1(desc1->rows, desc1->cols, desc1->elem_type, (uchar *) recd_tuple1->data);
-	cv::Mat recd_mat2(desc2->rows, desc2->cols, desc2->elem_type, (uchar *) recd_tuple2->data);
-	cv::Mat recd_mat3(desc3->rows, desc3->cols, desc3->elem_type, (uchar *) recd_tuple3->data);
-	cv::Mat recd_mat4(desc4->rows, desc4->cols, desc4->elem_type, (uchar *) recd_tuple4->data);
-
-	descriptors_.push_back(recd_mat1.clone());
-	descriptors_.push_back(recd_mat2.clone());
-	descriptors_.push_back(recd_mat3.clone());
-	descriptors_.push_back(recd_mat4.clone());
-
-	ids_.push_back(desc1->id);
-	ids_.push_back(desc2->id);
-	ids_.push_back(desc3->id);
-	ids_.push_back(desc4->id);
-
 	//std::cout<<descriptors_[0];
 
 	ROS_INFO("Done: Succeeded reading PEIS Tuples for SIFT Descriptors...");
 }
-*/
 
 void AcquireTabletopServer::matchWithRegistry(const cv::Mat& _input_descriptors, const float& tolerance)
 {
@@ -284,7 +176,7 @@ cv::Mat AcquireTabletopServer::cutImage(const cv::Mat& input_image, int row_offs
 {
 	if( (input_image.rows < row_offset + row_size) || (input_image.cols < col_offset + col_size) )
 	{
-		printf("%d, %d, %d, %d, %d, %d\n", input_image.rows, row_offset, row_size, input_image.cols, col_offset, col_size);
+		//printf("%d, %d, %d, %d, %d, %d\n", input_image.rows, row_offset, row_size, input_image.cols, col_offset, col_size);
 		row_size = input_image.rows - row_offset;
 		col_size = input_image.cols - col_offset;
 
@@ -303,6 +195,15 @@ cv::Mat AcquireTabletopServer::cutImage(const cv::Mat& input_image, int row_offs
 bool AcquireTabletopServer::serverCB(AcquireTabletopRequest& request, AcquireTabletopResponse& response)
 {
 	ROS_INFO("Server Called!");
+
+	for(int ii = 0; ii < 3; ii++)
+	{
+		for(int jj = 0; jj < 3; jj++)
+		{
+			std::cout << (*projection_matrix_)[ii][jj] <<" | ";
+		}
+		std::cout << std::endl;
+	}
 	float tole;
 
 	if(request.tolerance == 0.0 || request.tolerance > 1.0 || request.tolerance < 0.0)
@@ -321,18 +222,18 @@ bool AcquireTabletopServer::serverCB(AcquireTabletopRequest& request, AcquireTab
 	{
 		if(clusters_ptr_)
 			ROS_INFO("We have the clusters.");
-		sleep(1);
+		usleep(100000);
 	}
 
 	ros::param::set("/cluster_extraction_enable", false);
 
 	// Get the image from the rgb/image_raw topic.
 
-	image_raw_sub_ = nh_.subscribe("image", 2, &AcquireTabletopServer::imageCallback, this);
+	image_raw_sub_ = nh_.subscribe("image", 4, &AcquireTabletopServer::imageCallback, this);
 	while(!image_)
 	{
 		//ROS_INFO("Waiting for the camera image...");
-		sleep(1);
+		usleep(100000);
 	}
 
 	image_raw_sub_.shutdown();
@@ -349,37 +250,40 @@ bool AcquireTabletopServer::serverCB(AcquireTabletopRequest& request, AcquireTab
 	int unknown_num = 0;
 	int unseen_num = 0;
 
+	tf::StampedTransform camera_to_base_link;
+
+	try
+	{
+		tf_listener_->waitForTransform(image_->header.frame_id, "base_link", ros::Time(0), ros::Duration(1));
+		tf_listener_->lookupTransform(image_->header.frame_id, "base_link", ros::Time(0), camera_to_base_link);
+	}
+
+	catch(tf::TransformException& ex)
+	{
+		ROS_INFO("COCKED-UP TRANSFORM. ACQUIRE FAILED! Why: %s", ex.what());
+		return true;
+	}
+
 	for(int i = 0; i < clusters_ptr_->clusters.size(); i++)
 	{
-		int start_x = clusters_ptr_->clusters[i].window[0];
-		int end_x = clusters_ptr_->clusters[i].window[2];
-		int start_y = clusters_ptr_->clusters[i].window[1];
-		int end_y = clusters_ptr_->clusters[i].window[3];;
 
-		//start_x -= 30;
-		//end_x -= 30;
+		tf::Vector3 ptA(clusters_ptr_->clusters[i].a.x + 0.025, clusters_ptr_->clusters[i].a.y + 0.03, clusters_ptr_->clusters[i].a.z);
+		tf::Vector3 ptB(clusters_ptr_->clusters[i].b.x, clusters_ptr_->clusters[i].b.y, clusters_ptr_->clusters[i].b.z - 0.025);
 
+		tf::Vector3 ptAInCameraFrame = camera_to_base_link * ptA;
+		tf::Vector3 ptBInCameraFrame = camera_to_base_link * ptB;
 
-		//ROS_INFO("Widths: (%d,%d) and (%d,%d)", start_x, start_y, end_x, end_y);
+		// Now that ptA and ptB are in camera frame, we can project.
+		tf::Vector3 resultant_pixels_ptA = (*projection_matrix_) * ptAInCameraFrame;
+		tf::Vector3 resultant_pixels_ptB = (*projection_matrix_) * ptBInCameraFrame;
 
-		// ANGEN PARAMETERS
-//		const int START_INDEX_X = 195;
-//		const int START_INDEX_Y = 162;
-//		const int END_INDEX_X = 453;
-//		const int END_INDEX_Y = 358;
-//		const int correction_1 = 80;
-//		const int correction_2 = 20;
+		int start_x = (int) (resultant_pixels_ptA[0]/resultant_pixels_ptA[2]);
+		int start_y = (int) (resultant_pixels_ptA[1]/resultant_pixels_ptA[2]);
+		int end_x = (int) (resultant_pixels_ptB[0]/resultant_pixels_ptB[2]);
+		int end_y = (int) (resultant_pixels_ptB[1]/resultant_pixels_ptB[2]);
 
-		// PECCIOLI PARAMETERS
-		const int START_INDEX_X = 213;
-		const int START_INDEX_Y = 200;
-		const int END_INDEX_X = 540;
-		const int END_INDEX_Y = 440;
-		const int correction_1 = 10;
-		const int correction_2 = -10;
-
-		if( (start_x < START_INDEX_X && end_x < START_INDEX_X) || (start_x > END_INDEX_X && end_x > END_INDEX_X) ||
-				(start_y < START_INDEX_Y && end_y < START_INDEX_Y) || (end_y > END_INDEX_Y && start_y > END_INDEX_Y) )
+		if( (start_x < 0 && end_x < 0) || (start_x >= image_width && end_x >= image_width) ||
+				(start_y < 0 && end_y < 0) || (end_y >= image_height && start_y >= image_height) )
 		{
 			//ROS_INFO("UnSeen: %s", cluster_names[i].c_str());
 
@@ -390,45 +294,20 @@ bool AcquireTabletopServer::serverCB(AcquireTabletopRequest& request, AcquireTab
 			continue;
 		}
 
-		// ********************************************************************** //
-		// Transform the window from xtion camera indices to conventional camera indices //
-		// ********************************************************************** //
-		int cam_s_x, cam_s_y, cam_e_x, cam_e_y;
-
-		if(start_x < (float) START_INDEX_X)
-			cam_s_x = 0;
-		else
-			cam_s_x = (int) ( (start_x - (float) START_INDEX_X)*640.00/ (float) (END_INDEX_X - START_INDEX_X)) - correction_1;
-
-		if(start_y < (float) START_INDEX_Y)
-			cam_s_y = 0;
-		else
-			cam_s_y = (int) ( (start_y - (float) START_INDEX_Y)*480.00/ (float) (END_INDEX_Y - START_INDEX_Y)) - correction_1;
-
-		if(end_x < (float) START_INDEX_X)
-			cam_e_x = 0;
-		else
-			cam_e_x = (int) ( (end_x - (float) START_INDEX_X)*640.00/ (float) (END_INDEX_X - START_INDEX_X)) - correction_2;
-
-		if(end_y < (float) START_INDEX_Y)
-			cam_e_y = 0;
-		else
-			cam_e_y = (int) ( (end_y - (float) START_INDEX_Y)*480.00/ (float) (END_INDEX_Y - START_INDEX_Y)) - correction_2;
-
-		// This is needed because a part of the object may still be in the view.
-
-		if(cam_s_x < 0)
-			cam_s_x = 0;
-		if(cam_s_y < 0)
-			cam_s_y = 0;
-		if(cam_e_x > 639)
-			cam_e_x = 639;
-		if(cam_e_y > 479)
-			cam_e_y = 479;
+		if(start_x < 0)
+			start_x = 0;
+		if(start_y < 0)
+			start_y = 0;
+		if(end_x >= image_width)
+			end_x = image_width - 1;
+		if(end_y >= image_height)
+			end_y = image_height - 1;
 
 		//ROS_INFO("Widths: (%d,%d) and (%d,%d)", cam_s_x, cam_s_y, cam_e_x, cam_e_y);
 
-		cv::Mat new_part = cutImage(test_image->image, cam_s_y, cam_s_x, cam_e_y-cam_s_y, cam_e_x-cam_s_x);
+		cv::Mat new_part = cutImage(test_image->image, start_y, start_x, end_y-start_y, end_x-start_x);
+
+		//ROS_INFO("SHOWING CUT IMAGE: SIZE: %d, %d", end_x-start_x, end_y-start_y);
 
 		//cv::imshow("sucks", new_part);
 		//cv::waitKey(0);
@@ -715,6 +594,5 @@ int main(int argn, char* args[])
 	ros::init(argn, args, "acquire_tabletop_server");
 	acquire_tabletop::AcquireTabletopServer ATS;
 	ros::MultiThreadedSpinner m_t_spinner(4);
-
 	m_t_spinner.spin();
 }
