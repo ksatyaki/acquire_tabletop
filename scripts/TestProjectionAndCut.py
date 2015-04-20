@@ -45,7 +45,7 @@ class TestProjAndCut:
         
     def projectPointFromOpenniToCamera(self, ptVectorInBaseFrame):
               
-        trans, rot = self.listener.lookupTransform(self.image_header.frame_id, "/base_link",  rospy.Time())
+        trans, rot = self.listener.lookupTransform(self.image_header.frame_id, "ptu_tilt_motor_link",  rospy.Time())
         print trans, rot
         
         transMatrix = tf.transformations.translation_matrix(trans)
@@ -144,10 +144,10 @@ class TestProjAndCut:
         for i in range(len(four_points)):
             #pixels1 = self.projectPointFromOpenniToCamera(numpy.array( [four_points[i][0] + (four_points[i][5]*1.5/2) , four_points[i][1] + (four_points[i][3]*1.3/2), four_points[i][2] + (four_points[i][4]/2), 1.00]))
             #pixels2 = self.projectPointFromOpenniToCamera(numpy.array( [four_points[i][0] - (four_points[i][5]*1.5/2) , four_points[i][1] - (four_points[i][3]*0.9/2), four_points[i][2] - (four_points[i][4]/2), 1.00]))
-            pixels1 = self.projectPointFromOpenniToCamera(numpy.array( [four_points[i][0] + 0.025, four_points[i][1] + 0.03, four_points[i][2], 1.00 ]) )
-            pixels2 = self.projectPointFromOpenniToCamera(numpy.array( [four_points[i][3], four_points[i][4], four_points[i][5] - 0.025, 1.00 ]) )
-            cv2.circle(self.image, (pixels1[0]/pixels1[2], pixels1[1]/pixels1[2]), 20, 0x00ff00)
-            cv2.rectangle(image_copy, (pixels1[0]/pixels1[2], pixels1[1]/pixels1[2]), (pixels2[0]/pixels2[2], pixels2[1]/pixels2[2]) , 0xff0000)
+            pixels1 = self.projectPointFromOpenniToCamera(numpy.array( [four_points[i][0], four_points[i][1], four_points[i][2], 1.00 ]) )
+            pixels2 = self.projectPointFromOpenniToCamera(numpy.array( [four_points[i][3], four_points[i][4], four_points[i][5], 1.00 ]) )
+            #cv2.circle(self.image, (pixels1[0]/pixels1[2], pixels1[1]/pixels1[2]), 20, 0x00ff00)
+            cv2.rectangle(image_copy, (pixels1[0]/pixels1[2] - 75, pixels1[1]/pixels1[2]), (pixels2[0]/pixels2[2] -60, pixels2[1]/pixels2[2]) , 0xff0000)
         cv2.imshow('Transferred point', image_copy)
         cv2.waitKey(0)
         

@@ -254,8 +254,8 @@ bool AcquireTabletopServer::serverCB(AcquireTabletopRequest& request, AcquireTab
 
 	try
 	{
-		tf_listener_->waitForTransform(image_->header.frame_id, "base_link", ros::Time(0), ros::Duration(1));
-		tf_listener_->lookupTransform(image_->header.frame_id, "base_link", ros::Time(0), camera_to_base_link);
+		tf_listener_->waitForTransform(image_->header.frame_id, "ptu_tilt_motor_link", ros::Time(0), ros::Duration(1));
+		tf_listener_->lookupTransform(image_->header.frame_id, "ptu_tilt_motor_link", ros::Time(0), camera_to_base_link);
 	}
 
 	catch(tf::TransformException& ex)
@@ -277,9 +277,9 @@ bool AcquireTabletopServer::serverCB(AcquireTabletopRequest& request, AcquireTab
 		tf::Vector3 resultant_pixels_ptA = (*projection_matrix_) * ptAInCameraFrame;
 		tf::Vector3 resultant_pixels_ptB = (*projection_matrix_) * ptBInCameraFrame;
 
-		int start_x = (int) (resultant_pixels_ptA[0]/resultant_pixels_ptA[2]);
+		int start_x = (int) (resultant_pixels_ptA[0]/resultant_pixels_ptA[2] - 75);
 		int start_y = (int) (resultant_pixels_ptA[1]/resultant_pixels_ptA[2]);
-		int end_x = (int) (resultant_pixels_ptB[0]/resultant_pixels_ptB[2]);
+		int end_x = (int) (resultant_pixels_ptB[0]/resultant_pixels_ptB[2] - 60);
 		int end_y = (int) (resultant_pixels_ptB[1]/resultant_pixels_ptB[2]);
 
 		if( (start_x < 0 && end_x < 0) || (start_x >= image_width && end_x >= image_width) ||
