@@ -79,7 +79,7 @@ void AcquireTabletopServer::getDescriptorsFromTuples()
 
 	int id_for_tuple = CAM_PEIS_ID; //peiskmt_peisid();
 
-	ROS_INFO("Preparing ...");
+	ROS_INFO("\nPreparing ...");
 	int i = 0;
 	for(std::vector<std::string>::iterator it = object_names.begin(); it != object_names.end(); it++)
 	{
@@ -114,7 +114,7 @@ void AcquireTabletopServer::getDescriptorsFromTuples()
 
 	//std::cout<<descriptors_[0];
 
-	ROS_INFO("Done: Succeeded reading PEIS Tuples for SIFT Descriptors...");
+	ROS_INFO("\nDone: Succeeded reading PEIS Tuples for SIFT Descriptors...\n");
 }
 
 void AcquireTabletopServer::matchWithRegistry(const cv::Mat& _input_descriptors, const float& tolerance)
@@ -158,16 +158,18 @@ void AcquireTabletopServer::matchWithRegistry(const cv::Mat& _input_descriptors,
 
 		if(matches_filtered.size() < 10 * (tolerance))
 		{
-			//ROS_INFO(" ****(((%s)))**** has %d features.", ids_[i].c_str(), matches_filtered.size());
+		  ROS_INFO("[ACQUIRE] (%s has %d features)", ids_[i].c_str(), matches_filtered.size());
 			matches_filtered.clear();
 		}
 		else
 		{
-			//ROS_INFO("Match number %d has %d features.", i, matches_filtered.size());
-			matches_.push_back(matches_filtered);
+		  ROS_INFO("[ACQUIRE] (%s has %d features) --- OK!", ids_[i].c_str(), matches_filtered.size());
+		        matches_.push_back(matches_filtered);
 			match_indices_.push_back(i);
 		}
+		
 	}
+	ROS_INFO("[ACQUIRE] --------------------------");
 	// matches_ = matches_filtered_all[match_index_];
 
 }
@@ -267,8 +269,8 @@ bool AcquireTabletopServer::serverCB(AcquireTabletopRequest& request, AcquireTab
 	for(int i = 0; i < clusters_ptr_->clusters.size(); i++)
 	{
 
-		tf::Vector3 ptA(clusters_ptr_->clusters[i].a.x + 0.025, clusters_ptr_->clusters[i].a.y + 0.03, clusters_ptr_->clusters[i].a.z);
-		tf::Vector3 ptB(clusters_ptr_->clusters[i].b.x, clusters_ptr_->clusters[i].b.y, clusters_ptr_->clusters[i].b.z - 0.025);
+		tf::Vector3 ptA(clusters_ptr_->clusters[i].a.x, clusters_ptr_->clusters[i].a.y, clusters_ptr_->clusters[i].a.z);
+		tf::Vector3 ptB(clusters_ptr_->clusters[i].b.x, clusters_ptr_->clusters[i].b.y, clusters_ptr_->clusters[i].b.z);
 
 		tf::Vector3 ptAInCameraFrame = camera_to_base_link * ptA;
 		tf::Vector3 ptBInCameraFrame = camera_to_base_link * ptB;
@@ -350,7 +352,7 @@ bool AcquireTabletopServer::serverCB(AcquireTabletopRequest& request, AcquireTab
 		   cluster_names[i].find("unknown") != std::string::npos ||
 		   cluster_names[i].empty())
 		{
-			anchorUsingSignature(__object, tole);
+		  //anchorUsingSignature(__object, tole);
 		}
 
 		response.objects.table_objects.push_back(__object);
@@ -582,7 +584,7 @@ std::string AcquireTabletopServer::processImage(const cv::Mat& test_image, const
 	}
 	image_.reset();
 
-	//ROS_INFO("returning match string for index: %s", ids_[match_indices_[0]].c_str());
+	ROS_INFO("[ACQUIRE] (Saw: %s)", ids_[match_indices_[0]].c_str());
 	return ids_[match_indices_[0]];
 }
 
