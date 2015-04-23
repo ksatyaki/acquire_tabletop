@@ -585,6 +585,7 @@ std::string AcquireTabletopServer::processImage(const cv::Mat& test_image, const
 	image_.reset();
 
 	ROS_INFO("[ACQUIRE] (Saw: %s)", ids_[match_indices_[0]].c_str());
+	ROS_INFO("[ACQUIRE] --------------------------");
 	return ids_[match_indices_[0]];
 }
 
