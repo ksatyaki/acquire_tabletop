@@ -147,7 +147,7 @@ class TestProjAndCut:
             pixels1 = self.projectPointFromOpenniToCamera(numpy.array( [four_points[i][0], four_points[i][1], four_points[i][2], 1.00 ]) )
             pixels2 = self.projectPointFromOpenniToCamera(numpy.array( [four_points[i][3], four_points[i][4], four_points[i][5], 1.00 ]) )
             #cv2.circle(self.image, (pixels1[0]/pixels1[2], pixels1[1]/pixels1[2]), 20, 0x00ff00)
-            cv2.rectangle(image_copy, (pixels1[0]/pixels1[2] - 75, pixels1[1]/pixels1[2]), (pixels2[0]/pixels2[2] -60, pixels2[1]/pixels2[2]) , 0xff0000)
+            cv2.rectangle(image_copy, (pixels1[0]/pixels1[2] - 70, pixels1[1]/pixels1[2] - 50), (pixels2[0]/pixels2[2] - 40, pixels2[1]/pixels2[2] - 30) , 0xff0000)
         cv2.imshow('Transferred point', image_copy)
         cv2.waitKey(0)
         

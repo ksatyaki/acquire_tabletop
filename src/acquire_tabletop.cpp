@@ -126,6 +126,7 @@ void AcquireTabletopServer::matchWithRegistry(const cv::Mat& _input_descriptors,
 
 	matches_.clear();
 	match_indices_.clear();
+	match_numbers_.clear();
 
 	for(int i = 0; i < descriptors_.size(); i++)
 	{
@@ -149,7 +150,7 @@ void AcquireTabletopServer::matchWithRegistry(const cv::Mat& _input_descriptors,
 		for(std::vector <cv::DMatch>::iterator it = matches.begin(); it != matches.end(); it++)
 			for(std::vector <cv::DMatch>::iterator jt = matches.begin() + 1; jt != matches.end(); jt++)
 			{
-				if(it->distance < 0.40*jt->distance)
+				if(it->distance < 0.55*jt->distance)
 				{
 					matches_filtered.push_back(*it);
 					break;
@@ -166,9 +167,22 @@ void AcquireTabletopServer::matchWithRegistry(const cv::Mat& _input_descriptors,
 		  ROS_INFO("[ACQUIRE] (%s has %d features) --- OK!", ids_[i].c_str(), matches_filtered.size());
 		        matches_.push_back(matches_filtered);
 			match_indices_.push_back(i);
+			match_numbers_.push_back(matches_filtered.size());
 		}
 		
 	}
+
+	int max_match_number = 0;
+	for(int i = 0; i < match_numbers_.size(); i++) {
+	  if(match_numbers_[i] > max_match_number) {
+	    max_match_number = match_numbers_[i];
+	    match_numbers_[0] = match_numbers_[i];
+	    match_indices_[0] = match_indices_[i];
+	  }
+	}
+
+	if(match_indices_.size() > 0)
+	  ROS_INFO("Multiple matches. But %s wins out.", ids_[match_indices_[0]].c_str());
 	ROS_INFO("[ACQUIRE] --------------------------");
 	// matches_ = matches_filtered_all[match_index_];
 
@@ -279,10 +293,10 @@ bool AcquireTabletopServer::serverCB(AcquireTabletopRequest& request, AcquireTab
 		tf::Vector3 resultant_pixels_ptA = (*projection_matrix_) * ptAInCameraFrame;
 		tf::Vector3 resultant_pixels_ptB = (*projection_matrix_) * ptBInCameraFrame;
 
-		int start_x = (int) (resultant_pixels_ptA[0]/resultant_pixels_ptA[2] - 75);
-		int start_y = (int) (resultant_pixels_ptA[1]/resultant_pixels_ptA[2]);
-		int end_x = (int) (resultant_pixels_ptB[0]/resultant_pixels_ptB[2] - 60);
-		int end_y = (int) (resultant_pixels_ptB[1]/resultant_pixels_ptB[2]);
+		int start_x = (int) (resultant_pixels_ptA[0]/resultant_pixels_ptA[2] - 70);
+		int start_y = (int) (resultant_pixels_ptA[1]/resultant_pixels_ptA[2] - 50);
+		int end_x = (int) (resultant_pixels_ptB[0]/resultant_pixels_ptB[2] - 40);
+		int end_y = (int) (resultant_pixels_ptB[1]/resultant_pixels_ptB[2] - 30);
 
 		if( (start_x < 0 && end_x < 0) || (start_x >= image_width && end_x >= image_width) ||
 				(start_y < 0 && end_y < 0) || (end_y >= image_height && start_y >= image_height) )
@@ -593,8 +607,24 @@ std::string AcquireTabletopServer::processImage(const cv::Mat& test_image, const
 
 int main(int argn, char* args[])
 {
-	peiskmt_initialize(&argn, args);
 	ros::init(argn, args, "acquire_tabletop_server");
+	std::vector <std::string> peis_args;
+	ros::removeROSArgs(argn, args, peis_args);
+	std::vector <char*> peis_args_c_str;
+	
+	for(int i = 0; i < peis_args.size(); i++) {
+	  peis_args_c_str.push_back(new char[peis_args[i].size()+1]);
+	  strcpy(peis_args_c_str[i],peis_args[i].c_str());
+	}
+
+	argn = peis_args.size();
+	args = peis_args_c_str.data();
+
+	for(int i = 0; i < argn; i++) {
+	  ROS_INFO("(%s)",args[i]);
+	}
+
+	peiskmt_initialize(&argn, args);
 	acquire_tabletop::AcquireTabletopServer ATS;
 	ros::MultiThreadedSpinner m_t_spinner(4);
 	m_t_spinner.spin();

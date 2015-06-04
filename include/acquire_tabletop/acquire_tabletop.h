@@ -134,6 +134,12 @@ protected:
 	 */
 	std::vector<int> match_indices_;
 
+	/** 
+	 * Match Numbers 
+	 * 
+	 */
+	std::vector <int> match_numbers_;
+
 	/**
 	 * Callback to the image from rgb/image_raw.
 	 */
